@@ -1,0 +1,365 @@
+---
+title: "Redes Neuronales y Aprendizaje Profundo en R"
+author: "Rafael Díaz"
+date: "22/8/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, error = FALSE)
+```
+
+# Redes Neuronales
+
+Las redes neuronales o también llamadas sistemas anexionistas son un modelo de algorítmico que se basa en un gran conjunto de unidades neuronales simples, llamadas neuronas artificiales de forma que es muy similar al comportamiento de los axones de las neuronas que tenemos, cualquier organismo biológico. Cada unidad neuronal, se conecta con muchas otras y los enlaces entre ellas pueden incrementar o inhibir el estado de las neuronas que están adyacentes a la misma.
+
+Cada unidad neuronal de forma individual opera empleando operaciones de suma. Puede existir una función limitadora, una función umbral en cada una de las conexiones en la propia unidad, de modo que la señal pueda sobrepasar un límite antes de propagarse a otra neurona.
+
+En el ecosistema de R, existen múltiples paquetes que permiten crear modelos basados en redes neuronales. Conviene diferenciar entre dos casos de uso ya que, dependiendo de estos, son más adecuadas unas librerías u otras:
+
+Modelos de redes simples (perceptrón simple): estos modelos se caracterizan por tener arquitecturas relativamente sencillas por lo que los requerimientos computacionales no son elevados y no es necesario el uso el uso de GPUs. Dentro de este grupo destacan las implementaciones de **nnet** y **neuralnet**.
+
+## Introducción a la red neuronal
+
+La ciencia se ha inspirado de la naturaleza en una gran variedad de entornos. Podemos observar por ejemplo, como las aeronaves utilizan principios de aerodinámica tomados de la forma en que las aves se mantienen en el aire, las aletas de rana utilizadas por los buzos para mejorar el desplazamiento en el agua se inspiran en dicho animal, el funcionamiento de las cámaras se ha ido perfeccionado a través de la imitación de los ojos, entre otros ejemplos.
+
+La naturaleza provee una potente herramienta para aprender de sus errores a través de la selección natural, y llega a diseños que generan gran eficiencia y adaptación a su entorno. Esa característica hace que muchos de ellos se vuelvan grandes ideas tecnológicamente hablando.
+
+En el campo de la Inteligencia Artificial tenemos ejemplos de cómo se han adaptado modelos naturales para crear algoritmos que permitan aprender de sus errores y volverse más eficientes en su tarea. Estos algoritmos son particularmente útiles para resolver tareas en las que no es posible hallar una solución matemáticamente pura. Un ejemplo de lo anterior son las redes neuronales artificiales.
+
+Las redes neuronales artificiales, son algoritmos de software cuyo fundamento se inspira en el comportamiento de las neuronas del cerebro humano. En nuestro cerebro ocurren millones de reacciones químicas que comunican nuestras células cerebrales, o neuronas, unas con otras, mediante estructuras especializadas.
+
+![Figura 1. Estructura general de una neurona](https://soldai.com/wp-content/uploads/2019/08/inspiraciones_fig1.jpg)
+
+Las neuronas se conectan entre sí por medio de conexiones llamadas sinapsis, las cuales son intercambios eléctricos entre el botón sináptico de una neurona (emisora o presináptica) y el botón dendrítico de otra (receptora o pos sináptica). Dichas conexiones permiten que una neurona mande descargas eléctricas a las células con las que se encuentra conectada. La descarga eléctrica viaja desde el cuerpo o soma de una neurona hasta el Axón, el cual realiza la función de un cañón eléctrico a través de los neurotransmisores.
+Cuando una neurona recibe un estímulo su electroquímica se altera, acumulando energía. Cuando esa energía se acumula en cierta cantidad, la neurona la descarga por medio del Axón hacia las neuronas vecinas, formando una conexión sináptica con ellas.
+
+![Figura 2. El impulso nervioso entra por las dendritas, se procesa en el cuerpo celular y sale por el axón.](https://djinit-ai.github.io/images/nervecell.gif)
+
+## Arquitectura de la Red Neuronal
+
+Inspirados en este mecanismo biológico, [McCulloch & Pitts](http://www.cs.cmu.edu/~./epxing/Class/10715/reading/McCulloch.and.Pitts.pdf) crearon un modelo artificial de una neurona en 1943. Más tarde esta idea fue retomada por Rosenblatt, quien creó una estructura llamada perceptrón. El perceptrón es una estructura que posee una o varias entradas, una función de activación y una salida.
+
+![Figura 3. Estructura general del perceptrón.](https://soldai.com/wp-content/uploads/2019/08/inspiraciones_fig2.jpg)
+Las entradas del perceptrón actúan como las dendritas o señales de entrada hacia la neurona. La función de activación realiza el papel del soma que decide en qué momento disparar esa señal eléctrica, y la salida modela al axón, que al activarse envía información hacia las neuronas con las cuales se encuentra conectada.
+
+Las redes neuronales se construyen a partir de la agregación de perceptrones de distintos tipos en estructuras complejas. La estructura más sencilla se conforma de tres capas, una capa de entrada, una capa intermedia u oculta y una capa de salida.
+
+![Figura 4. Red neuronal artificial.](https://soldai.com/wp-content/uploads/2019/08/inspiraciones_fig3.jpg)
+
+Para facilitar la comprensión de la estructura de las redes, es útil representar una red equivalente a un modelo de regresión lineal.
+
+$$y = w_1 x_1 + w_2 x_2 + \cdots + w_d x_d + b$$
+
+![](https://rviews.rstudio.com/2020/07/20/shallow-neural-net-from-scratch-using-r-part-1/single_layer_nn.png)
+
+Para que la red neuronal “aprenda”, se utilizan técnicas de Machine Learning, las cuales pueden ser de variada naturaleza. Sin embargo, las más comunes son las de aprendizaje supervisado, en las cuales se le brinda como entrada al algoritmo de datos previamente etiquetados, es decir, un humano “supervisa” el entrenamiento al decirle al algoritmo cómo se debe interpretar la información.
+
+Por ejemplo, supongamos que estamos tratando de construir una red neuronal capaz de clasificar si una fruta es una naranja o un plátano, a partir de su descripción. Cada una de las entradas representa una característica del objeto. Podemos diseñar la red para que la entrada uno se active si la fruta tiene color amarillo y la entrada dos se active cuando la fruta sea redonda. Nuestra intención es que cuando se describa un plátano la entrada uno se active y la entrada dos no lo haga, y cuando describa una naranja ocurra el proceso inverso. Entonces, para que la red aprenda a diferenciar entre una naranja y un plátano, le daremos ejemplos al algoritmo, en los cuales cuando se active la primera entrada y no la segunda, la respuesta correcta sea plátano. Y cuando ocurra el proceso inverso, la respuesta sea naranja.
+
+Este proceso se automatiza por medio de algoritmos de propagación del error, comparando el valor de salida arrojado por la red neuronal con el valor de salida de los datos etiquetados, calculando la diferencia y considerándola como un error. A continuación se distribuye el peso de ese error para que las neuronas “ajusten” sus conexiones hasta tener los resultados deseados.
+
+Así que el proceso de aprendizaje en las redes neuronales, se trata esencialmente de encontrar los pesos adecuados para cada uno de los enlaces de las neuronas. Matemáticamente hablando, lo que ocurre conforme la información pasa de una capa hacia la otra, es una composición de funciones, la cual puede llegar a ser sumamente compleja, por ello, describir que está pasando en cada una de las capas es un reto interesante, sin embargo, se tienen nociones de que cada capa va “extrayendo” características de un nivel cada vez más alto, hasta llegar a su clasificación o respuesta final.
+
+Detrás de esta estructura simplificada de neurona, se han propuesto una serie de mecanismos cada vez más complejos que han logrado realizar tareas sorprendentes, incluso teniendo mejor desempeño que los humanos en diferentes tareas, como por ejemplo jugar al Go
+
+![Figura 5. Tipos de Redes Neuronales. Tomada de [The Asimov Institute](https://www.asimovinstitute.org/neural-network-zoo/).](https://soldai.com/wp-content/uploads/2019/08/inspiraciones_fig4-683x1024.jpg)
+
+
+El mundo de las redes neuronales se ha vuelto cada vez más complejo y extenso (para muestra en la Fig. 5 se muestra un catálogo de diferentes redes neuronales elaborado Fjodor Van Venn del Instituto Asimov), pero la inspiración directa de estos algoritmos viene a partir del modelo neuronal biológico.
+
+Hoy en día hay un intercambio interesante entre las neurociencias y las ciencias de la computación, las cuales están aprendiendo unas de las otras y han traído una nueva era, que resulta muy emocionante en cuanto a los algoritmos de aprendizaje automático, en la cual las máquinas pueden aprender gracias a la imitación de nuestro cerebro, y tal vez la manera en que las máquinas aprendan, nos pueda ayudar a desentrañar cosas que aún desconocemos de nuestra biología.
+
+## Funciones de Activación
+
+En términos simples, una función de activación ayuda a capturar relaciones complejas entre la entrada y la salida. Las funciones de activación son una sola línea de código que le da a las redes neuronales no linealidad y expresividad. Hay muchas funciones de activación. Algunos de ellos son los siguientes:
+
++ La **función de identidad** es una función que asigna la entrada al mismo valor de salida. Es un operador lineal en el espacio vectorial. Además, función de línea recta conocida donde la activación es proporcional a la entrada.
++ En la **función de paso binario** , si el valor de Y está por encima de un cierto valor conocido como umbral, la salida es Verdadera (o activada), y si es menor que el umbral, entonces la salida es falsa (o no activada). Es muy útil en el clasificador.
++ **Función sigmoidea** llamada funciones en forma de S. Las funciones tangentes logísticas e hiperbólicas son funciones sigmoideas de uso común. Hay dos tipos de funciones sigmoideas.
+  - La **función sigmoidea binaria** es una función logística donde los valores de salida son binarios o varían de 0 a 1.
+  - La **función sigmoidea bipolar** es una función logística en la que el valor de salida varía de -1 a 1. También se conoce como función tangente hiperbólica o tanh.
++ **Función de rampa**: el nombre de la función de rampa se deriva de la apariencia de su gráfico. Asigna entradas negativas a 0 y entradas positivas a la misma salida.
++ **ReLu** significa unidad lineal rectificada (ReLU). Es la función de activación más utilizada en el mundo. Emite 0 para valores negativos de x.
++ **Exponential linear units**: es una función que tiende a hacer converger el costo a cero más rápido y producir resultados más precisos. A diferencia de otras funciones de activación, ELU tiene una constante alfa adicional que debería ser un número positivo. ELU se suaviza lentamente hasta que su salida es igual a $-\alpha$, mientras que RELU se suaviza bruscamente. 
++ **Rectified Linear Units** Una invención reciente que significa Unidades lineales rectificadas. La fórmula es engañosamente simple: $max (0, z)$. A pesar de su nombre y apariencia, no es lineal y ofrece los mismos beneficios que Sigmoid pero con un mejor rendimiento. ReLu es menos costoso computacionalmente que tanh y sigmoide porque involucra operaciones matemáticas más simples.
++ **Tanh** comprime un número de valor real en el rango [-1, 1]. No es lineal. Pero a diferencia de Sigmoid, su salida está centrada en cero. Por tanto, en la práctica siempre se prefiere la no linealidad tanh a la no linealidad sigmoidea. 
+
+![](https://rviews.rstudio.com/2020/07/20/shallow-neural-net-from-scratch-using-r-part-1/activation_functions.png)
+
+Más información en [CS231n Convolutional Neural Networks for Visual Recognition](https://cs231n.github.io/neural-networks-1/)
+
+## Función de costo
+
+La función de coste $(l)$, también llamada función de pérdida, loss function o cost function, es la encargada de cuantificar la distancia entre el valor real y el valor predicho por la red, en otras palabras, mide cuánto se equivoca la red al realizar predicciones. En la mayoría de casos, la función de coste devuelve valores positivos. Cuanto más próximo a cero es el valor de coste, mejor son las predicciones de la red (menor error), siendo cero cuando las predicciones se corresponden exactamente con el valor real.
+
+La función de coste puede calcularse para una única observación o para un conjunto de datos (normalmente promediando el valor de todas las observaciones). Es el segundo caso el que se utiliza para dirigir el entrenamiento de los modelos.
+
+Dependiendo del tipo de problema, regresión o clasificación, es necesario utilizar una función de coste u otra. En problemas de regresión, las más utilizadas son el error cuadrático medio y el error absoluto medio. En problemas de clasificación suele emplearse la *función log loss*, también llamada *logistic loss* o *cross-entropy loss*.
+
+**Error cuadrático medio**
+
+El error cuadrático medio (mean squared error, MSE) es con diferencia la función de coste más utilizada en problemas de regresión. Para una determinada observación $i$, el error cuadrático se calcula como la diferencia al cuadrado entre el valor predicho $\hat y$ y el valor real $y$.
+
+$$l^{(i)} (\mathbb w, b) = \left( \hat y^{(i)} - y^{(i)} \right)^2$$
+
+Las funciones de coste suelen escribirse con la notación $l (\mathbb w, b)$ para hacer referencia a que su valor depende de los pesos y bias del modelo, ya que son estos los que determinan el valor de las predicciones $y^{(i)}$.
+
+Con frecuencia, esta función de coste se encuentra multiplicada por $\frac{1}{2}$, esto es simplemente por conveniencia matemática para simplificar el cálculo de su derivada.
+
+$$l^{(i)} (\mathbb w, b) = \frac{1}{2} \left( \hat y^{(i)} - y^{(i)} \right)^2$$
+
+Para cuantificar el error que comete el modelo todo un conjunto de datos, por ejemplo los de entrenamiento, se promedia el error de todas las $N$ observaciones.
+
+$$L (\mathbb w, b) = \frac{1}{2} \sum_{i=1}^n l^{(i)} (\mathbb w, b) = \frac{1}{n} \sum_{i=1}^n \left( \hat y^{(i)} - y^{(i)} \right)^2$$
+Cuando un modelo se entrena utilizando el error cuadrático medio como función de coste, está aprendiendo a predecir la media de la variable respuesta.
+
+**Error medio absoluto**
+
+El error medio absoluto (mean absolute error, MAE) consiste en promediar el error absoluto de las predicciones.
+
+$$L (\mathbb w, b) = \frac{1}{n} \sum_{i=1}^n | \hat y^{(i)} - y^{(i)} |$$
+El error medio absoluto es más robusto frente a outliers que el error cuadrático medio. Esto significa que, el entrenamiento del modelo, se ve menos influenciado por datos anómalos que pueda haber en el conjunto de entrenamiento. Cuando un modelo se entrena utilizando el error absoluto medio como función de coste, está aprendiendo a predecir la mediana de la variable respuesta.
+
+
+**Log loss, logistic loss o cross-entropy loss**
+
+En problemas de clasificación, la capa de salida utiliza como función de activación la función softmax. Gracias a esta función, la red devuelve una serie de valores que pueden interpretarse como la probabilidad de que la observación predicha pertenezca a cada una de las posibles clases.
+
+Cuando la clasificación es de tipo binaria, donde la variable respuesta es $1$ o $0$, y $p=Pr(y=1)$, la función de coste log-loss se define como:
+
+
+$$L_{\log} = - \log Pr (y | p) = - (y \log(p) + (1-y) \log(1-p))$$
+Para problemas de clasificación con más de dos clases, esta fórmula se generaliza a:
+
+$$L_{\log} (Y, P) = - \log Pr (Y | P) = - \frac{1}{N} \sum_{1=0}^{N-1} \sum_{k=0}^{K-1} y_{i, k} \log p_{i, k}$$
+En ambos casos, minimizar esta la función equivale a que la probabilidad predicha para la clase correcta tienda a 1 y a 0 en las demás clases.
+
+Dado que esta función se ha utilizado en campos diversos, se le conoce por nombres distintos: Log loss, logistic loss o cross-entropy loss, pero todos hacen referencia a lo mismo. Puede encontrarse una explicación más detallada de esta función de coste aquí.
+
+
+Lea esta respuesta de [StackOverflow](https://stats.stackexchange.com/questions/154879/a-list-of-cost-functions-used-in-neural-networks-alongside-applications) para comprender el papel de las funciones de costo y sus varios tipos
+
+## Ejemplo en R
+
+Para este ejercicio se van a utilizar los datos universitarios de U.S.News and World Report
+
+**Descripción**
+
+Estadísticas de un gran número de universidades de EE. UU. De la edición de 1995 de US News and World Report. Contiene una tabla con 777 observaciones con las siguientes 18 variables.
+
++ `Private` (Privado): Un factor con niveles No y Sí que indican universidad privada o pública
++ `Apps` (Aplicaciones): Número de solicitudes recibidas
++ `Accept` (Aceptar): Número de solicitudes aceptadas
++ `Enroll` (Inscripciones): Número de nuevos estudiantes inscritos
++ `Top10perc`: Pct. nuevos estudiantes del 10% superior de H.S. clase
++ `Top25perc`: Pct. nuevos estudiantes del 25% superior de H.S. clase
++ `F.Undergrad` (F.Universidad): Número de estudiantes universitarios a tiempo completo
++ `P.Undergrad` (P.Universidad): Número de estudiantes universitarios a tiempo parcial
++ `Outstate` (Fuera del estado): Matrícula fuera del estado
++ `Room.Board` (Alojamiento y comida): Costos de alojamiento y comida
++ `Books` (Libros): Costos estimados del libro
++ `Personal`: Gasto personal estimado
++ `PhD`: Pct. de profesores con doctorados
++ `Terminal`: Pct. de profesores con grado terminal
++ `S.F.Ratio`: Relación E.P.: Proporción de estudiantes / profesores
++ `perc.alumni`: Pct. ex alumnos que donan
++ `Expend` (Gastar): Gastos de instrucción por estudiante
++ `Grad.Rate`: Tasa de graduación
+
+**Fuente:** Este conjunto de datos se tomó de la biblioteca StatLib que se mantiene en la Universidad Carnegie Mellon. El conjunto de datos se utilizó en la Exposición de Análisis de Datos de 1995 de la Sección de Gráficos Estadísticos de la ASA. 
+
+```{r}
+## Cargo mis librerias
+library(ISLR)
+library(kableExtra)
+library(dplyr)
+library(caTools)
+library(magrittr)
+library(neuralnet)
+library(caret)
+```
+
+Observo las primeras 5 filas de la base de datos.
+
+```{r}
+kbl(x = head(College, 5)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F)
+```
+
+### Preprocesamiento de datos
+ 
+Es importante normalizar los datos antes de entrenar una red neuronal en ellos. La red neuronal puede tener dificultades para converger antes del número máximo de iteraciones permitido si los datos no están normalizados. Hay muchos métodos diferentes para la normalización de datos. Usaremos la función scale() incorporada en R para realizar esta tarea fácilmente.
+
+Por lo general, es mejor escalar los datos de 0 a 1, o de -1 a 1. Podemos especificar el centro y la escala como argumentos adicionales en la función scale (). Por ejemplo:
+
+
+```{r}
+normalize <- function(x) {
+  return( (x - min(x)) / (max(x) - min(x)) )
+}
+
+scaled.data <- College %>% select_if(is.numeric) %>%
+               lapply(., normalize) %>% as.data.frame() %>%
+               set_rownames(rownames(College))
+```
+
+### Particion conjunto de datos en Train y Test
+
+Dividamos ahora nuestros datos en un conjunto de entrenamiento y un conjunto de prueba. Ejecutaremos nuestra red neuronal en el conjunto de entrenamiento y luego veremos qué tan bien se desempeñó en el conjunto de prueba.
+
+Usaremos caTools para dividir aleatoriamente los datos en un conjunto de entrenamiento y un conjunto de prueba. 
+
+```{r}
+# Convert Private column from Yes/No to 1/0
+Private = as.numeric(College$Private)-1
+data = cbind(Private, scaled.data)
+
+# Create Split (any column is fine)
+set.seed(101)
+split = sample.split(data$Private, SplitRatio = 0.70)
+
+# Split based off of split Boolean Vector
+train = subset(data, split == TRUE)
+test = subset(data, split == FALSE)
+```
+
+
+### Creando la red neuronal
+ 
+Antes de llamar a la función `neuralnetwork()`, necesitamos crear una fórmula para insertar en el modelo de aprendizaje automático. La función neuralnetwork () no aceptará el formato R decimal típico para una fórmula que incluya todas las características (por ejemplo, y ~.). Sin embargo, podemos usar un script simple para crear la fórmula expandida y ahorrarnos algo de escritura:
+
+```{r}
+feats <- names(scaled.data)
+
+# Concatenate strings
+f <- paste(feats,collapse=' + ')
+f <- paste('Private ~',f)
+
+# Convert to formula
+f <- as.formula(f)
+
+f
+```
+
+La función neuralnet tiene la siguiente estructura:
+
++ neuralnet(formula, data, hidden = 1, threshold = 0.01, stepmax = 1e+05, rep = 1, startweights = NULL, learningrate.limit = NULL, learningrate.factor = list(minus = 0.5, plus = 1.2), learningrate = NULL, lifesign = “none”, lifesign.step = 1000, algorithm = “rprop+”, err.fct = “sse”, act.fct = “logistic”, linear.output = TRUE, exclude = NULL, constant.weights = NULL, likelihood = FALSE)
+
+Argumentos:
+
++ `formula:` una descripción simbólica del modelo que se va a instalar.
++ `data:` un marco de datos que contiene las variables especificadas en la fórmula.
++ `hidden:` un vector de enteros que especifica el número de neuronas ocultas (vértices) en cada capa.
++ `threshold:` un valor numérico que especifica el umbral para los derivados parciales de la función de error como criterio de parada.
++ `stepmax:` los pasos máximos para el entrenamiento de la red neural. Alcanzar este máximo conduce a una interrupción del proceso de entrenamiento de la red neural.
++ `rep:` el número de repeticiones para el entrenamiento de la red neural.
++ `startweights:` un vector que contiene los valores iniciales de las ponderaciones. Se establece en NULL para la inicialización aleatoria.
++ `learningrate.limit:` un vector o una lista con el límite inferior y superior del ritmo de aprendizaje. Utilizado sólo para RPROP y GRPROP.
++ `learningrate.factor:` un vector o una lista que contenga los factores de multiplicación para la velocidad de aprendizaje superior e inferior. Utilizado sólo para RPROP y GRPROP.
++ `learningrate:` un valor numérico que especifica la velocidad de aprendizaje utilizada por la retropaginación tradicional. Se utiliza sólo para la retropropagación tradicional.
++ `lifesign:` una cadena que especifica cuánto imprimirá la función durante el cálculo de la red neuronal. "ninguna","mínima" o "completa".
++ `lifesign.step:` un número entero que especifica el tamaño del paso para imprimir el umbral mínimo en modo de signo de vida completo.
++ `algorithm:` una cadena que contiene el tipo de algoritmo para calcular la red neuronal. Los siguientes tipos son posibles: 'backprop', 'rprop+', 'rprop-', 'sag', o 'slr'. "backprop" se refiere a la retropagación, "rprop+" y "rprop-" se refieren a la retropagación elástica con y sin retroceso del peso, mientras que "sag" y "slr" inducen el uso del algoritmo de convergencia global modificado (grprop). Vea Detalles para más información.
++ `err.fct:` una función diferenciable que se utiliza para el cálculo del error. Alternativamente, se pueden utilizar las cadenas 'sse' y 'ce', que significan la suma de los errores cuadrados y la cruzentropía.
++ `act.fct:` una función diferenciable que se utiliza para suavizar el resultado del producto cruzado del covariante o las neuronas y los pesos. Adicionalmente las cadenas, 'logístico' y 'tanh' son posibles para la función logística e hiperbólica tangencial.
++ `linear.output:` lógico. Si act.fct no debe aplicarse a la salida, las neuronas establecen la salida lineal como VERDADERA, de lo contrario como FALSA.
++ `exclude:` un vector o una matriz que especifique los pesos que se excluyen del cálculo. Si se indica como vector, deben + conocerse las posiciones exactas de las pesas. Una matriz con n filas y 3 columnas excluirá n pesos, donde la primera columna representa la capa, la segunda la neurona de entrada y la tercera la neurona de salida del peso.
++ `constant.weights:` un vector que especifica los valores de los pesos que se excluyen del proceso de entrenamiento y se tratan como fijos.
++ `likelihood:` lógico. Si la función de error es igual a la función de verosimilitud negativa, se calcularán los criterios de información AIC y BIC. Además, el uso de confidence.interval es significativo.
+Para conocer en detalle la función se recomienda al lector escribir en la consola de R help(neuralnet).
+
+
+```{r}
+nn <- neuralnet(formula = f, data = train, hidden=c(3,2), linear.output=FALSE)
+```
+
+El objeto nn tiene varios elementos en su interior, éstos se pueden ver usando el código siguiente:
+
+```{r}
+names(nn)
+```
+
+
+El elemento act.fct es la función de activación (logística por defecto) y el elemento weights contiene los pesos mostrados en la anterior figura. Estos dos elementos serán útiles más adelante. A continuación el código para explorar lo que hay dentro de estos dos elementos.
+
+```{r}
+nn$act.fct # Obtner la función de activación
+```
+
+```{r}
+nn$err.fct # Obtener la función de Costo
+```
+
+```{r}
+nn$weights # Obtener en formas de vector los weigths=pesos
+```
+
+
+#### Predicciones y evaluaciones
+ 
+¡Ahora veamos qué tan bien nos desempeñamos! Usamos la función `compute()` con los datos de prueba (solo las características) para crear valores predichos. Esto devuelve una lista desde la que podemos llamar a net.result. 
+
+```{r}
+# Compute Predictions off Test Set
+predicted.nn.values <- compute(nn, test[2:18])
+
+# Check out net.result
+print(head(predicted.nn.values$net.result))
+```
+
+Observe que todavía tenemos resultados entre 0 y 1 que son más como probabilidades de pertenecer a cada clase. Usaremos `sapply()` para redondearlos a 0 o 1 clase para que podamos evaluarlos con las etiquetas de prueba.
+
+```{r}
+predicted.nn.values$net.result <- ifelse(predicted.nn.values$net.result > 0.5, 1, 0)
+```
+
+Ahora creemos una matriz de confusión simple:
+
+```{r}
+confusionMatrix(as.factor(ifelse(predicted.nn.values$net.result == 1,"Yes","No")),
+                as.factor(ifelse(test$Private == 1,"Yes","No")))
+```
+
+
+#### Visualización de la red neuronal
+ 
+Podemos visualizar la red neuronal usando el comando `plot(nn)`. Las líneas negras representan los vectores ponderados entre las neuronas. La línea azul representa el sesgo agregado. Desafortunadamente, aunque el modelo es claramente un predictor muy poderoso, no es fácil interpretar directamente los pesos. Esto significa que normalmente tenemos que tratar los modelos de redes neuronales más como cajas negras.
+
+```{r}
+plot(nn, rep="best")
+```
+
+
+## Pros y contras
+
+Las redes neuronales son más flexibles y se pueden utilizar con problemas de regresión y clasificación. Las redes neuronales son buenas para el conjunto de datos no lineales con una gran cantidad de entradas, como imágenes. Las redes neuronales pueden funcionar con cualquier cantidad de entradas y capas. Las redes neuronales tienen la fuerza numérica que pueden realizar trabajos en paralelo.
+
+Hay disponibles más algoritmos alternativos, como SVM, Árbol de decisión y Regresión, que son simples, rápidos, fáciles de entrenar y proporcionan un mejor rendimiento. Las redes neuronales son mucho más de la caja negra, requieren más tiempo para el desarrollo y más potencia de cálculo. Las redes neuronales requieren más datos que otros algoritmos de aprendizaje automático. Los NN solo se pueden usar con entradas numéricas y conjuntos de datos de valores que no faltan. Un conocido investigador de redes neuronales dijo: "Una red neuronal es la segunda mejor manera de resolver cualquier problema. La mejor manera es comprender realmente el problema".
+
+## Casos de uso de NN
+
+Las maravillosas propiedades de NN ofrecen muchas aplicaciones como:
+
++ Reconocimiento de patrones: las redes neuronales son muy adecuadas para problemas de reconocimiento de patrones como reconocimiento facial, detección de objetos, reconocimiento de huellas dactilares, etc.
++ Detección de anomalías: las redes neuronales son buenas en la detección de patrones y pueden detectar fácilmente los patrones inusuales que no encajan en los patrones generales.
++ Predicción de series de tiempo: las redes neuronales se pueden utilizar para predecir problemas de series de tiempo, como el precio de las acciones, la previsión meteorológica.
++ Procesamiento del lenguaje natural: las redes neuronales ofrecen una amplia gama de aplicaciones en las tareas de procesamiento del lenguaje natural, como la clasificación de texto, el reconocimiento de entidades nombradas (NER), el etiquetado de parte del habla, el reconocimiento del habla y la revisión ortográfica.
+
+# Deep Learning
+
+El término deep learning engloba a todo un conjunto de modelos basados en redes neuronales artificiales (artificial neural networks) que contienen múltiples capas intermedias (ocultas). En concreto, H2O incorpora redes neuronales de tipo Multi-layer - feedforward - neural networks. Estas redes se caracterizan por:
+
+Pueden tener una o múltiples capas intermedias, también conocidas como capas ocultas. Son las capas de neuronas que hay entre la capa de entrada y la de salida.
+
+La estructura es full conected, lo que significa que cada neurona está conectada con todas las neuronas de la capa siguiente.
+
+El peso (participación de cada neurona en la red) se aprende mediante el proceso feed-forward. A grandes rasgos, la estrategia de aprendizaje consiste en un proceso iterativo. En cada iteración (época), la red predice las observaciones de entrenamiento, se calcula el error de estas predicciones comparando los resultados frente al valor real y se reajustan los pesos de las neuronas con el objetivo de minimizar el error (backpropagation y descenso de gradiente).
+
+Estas redes son unas de las más empleadas, pero existen otros tipos, por ejemplo, las Convolutional Neural Networks (CNNs) son las que mejores resultados dan cuando se trabaja con imágenes.
+
+Comprender los fundamentos de las redes neuronales y deep learning requiere de un estudio notable, puede encontrarse mucha de la información necesaria en el curso gratuito de Stanford Convolutional Neural Networks for Visual Recognition y en el libro Deep Learning An MIT Press book.
+
+Deep learning son modelos más complejos cuyos requerimientos computacionales hacen necesario el uso de muy optimizado de CPUs o GPUs. Para este tipo de modelos se tiene que recurrir a frameworks especializados como [H2O](https://www.h2o.ai/es/), [Tensorflow-Keras](https://tensorflow.rstudio.com/) o [Torch](https://torch.mlverse.org/).
+
